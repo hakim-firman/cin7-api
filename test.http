@@ -1,0 +1,45 @@
+POST http://localhost:3000/api/users
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username" : "Hakim",
+  "password" : "password",
+  "name" : "Hakim Firman Febrian"
+}
+
+###
+
+POST http://localhost:3000/api/users/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username" : "Hakim",
+  "password" : "password"
+}
+
+###
+
+GET http://localhost:3000/api/users/current
+Content-Type: application/json
+Accept: application/json
+Authorization: 48b51bc5-5c30-4da4-aa1f-1f637a9388c4
+
+###
+
+PATCH http://localhost:3000/api/users/update
+Content-Type: application/json
+Accept: application/json
+Authorization: 48b51bc5-5c30-4da4-aa1f-1f637a9388c4
+
+{
+  "name" : "Hakim Firman;"
+}
+
+###
+
+DELETE http://localhost:3000/api/users/logout
+Content-Type: application/json
+Accept: application/json
+Authorization: 48b51bc5-5c30-4da4-aa1f-1f637a9388c4
