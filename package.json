@@ -1,10 +1,12 @@
 {
-  "name": "express-restful-api",
+  "name": "CIN7-API",
   "version": "1.0.0",
   "description": "learn restful api express js",
   "main": "src/main.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "start": "node src/main.js",
+    "dev": "nodemon src/main.js"
   },
   "jest": {
     "testEnvironment": "node",
@@ -17,6 +19,7 @@
   "type": "module",
   "dependencies": {
     "@prisma/client": "^6.12.0",
+    "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
     "express": "^5.1.0",
     "joi": "^17.13.3",
@@ -32,6 +35,7 @@
     "@types/uuid": "^10.0.0",
     "babel-jest": "^30.0.4",
     "jest": "^30.0.4",
+    "nodemon": "^3.1.10",
     "prisma": "^6.12.0",
     "supertest": "^7.1.3"
   }
