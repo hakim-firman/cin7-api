@@ -8,16 +8,16 @@ const getOutTransaction = async (req,sku) => {
   try {
     const {location = ''} = req.params;
     const result = await getSaleList(req);
-    const filteredResult = result.filter(item => item.Status !== 'VOIDED' && item.CombinedReceivingStatus !== 'SHIPPED');
     let productLines = [];
     let dueOutboundQty = 0;
-    let outbound = 0;
     const groupedByMonth = {};
     let dueOutboundProductLines = [];
-    let outboundProductLines = [];
     let dueGroupedByMonth = {};
     
+    const filteredResult = result.filter(item => item.Status !== 'VOIDED' && item.CombinedReceivingStatus !== 'SHIPPED');
+    
     const salesOrder= await Promise.all(filteredResult.map(item => getAdvanceSale(item.SaleID)));
+    
     for (let i = 0; i < filteredResult.length; i++) {
       const item = filteredResult[i];
       const saleOrder = salesOrder[i];

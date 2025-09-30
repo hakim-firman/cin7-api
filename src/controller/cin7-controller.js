@@ -120,16 +120,13 @@ const getSOH = async (req, res, next) => {
 const getOTS = async (req, res, next) => {
   try {
   
-    const {sku ='',location ='' } = req.params;
-    logger.info("getOTS")
-    console.log("getOTS")
+      const {sku ='',location ='' } = req.params;
       const [inboundTransaction, outboundTransaction, currentSOH] = await Promise.all([
         purchaseService.getInTransaction(req),
         saleService.getOutTransaction(req, sku),
         cin7Service.getProductAvailabilityBySKU(sku, location),
       ]);
       const openingSOH = currentSOH?.ProductAvailabilityList?.[0]?.OnHand ?? 0;
-      
       const merged = {};
       const mergedDue = {};
       [...inboundTransaction.resultByMonth, ...outboundTransaction.resultByMonth].forEach(item => {
@@ -138,6 +135,7 @@ const getOTS = async (req, res, next) => {
         merged[item.month].inboundQty += item.inboundQty || 0;
         merged[item.month].outboundQty += item.outboundQty || 0;
       });
+      
       [...inboundTransaction.dueResultByMonth, ...outboundTransaction.dueResultByMonth].forEach(item => {
         if (!item.month) return
         mergedDue[item.month] ??= { month: item.month, inboundQty: 0, outboundQty: 0 };
@@ -191,13 +189,15 @@ const getOTS = async (req, res, next) => {
     }
 
     res.status(200).json({
-      data: { result :{
-      soh:result,
-      due:dueResult
+      data: { 
+      result :{
+        soh : result,
+        due : dueResult
       },
-      due, 
-      soh, 
-      product },
+        due, 
+        soh, 
+        product 
+        },
     });
   }
     catch (e) {
