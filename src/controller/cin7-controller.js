@@ -162,6 +162,15 @@ const getOTS = async (req, res, next) => {
       }
     });
     
+    dueResult.forEach((item, index) => {
+      if (index === 0) {
+        item.ots = openingSOH + item.inboundQty - item.outboundQty;
+      } else {
+        const prev = dueResult[index - 1];
+        item.ots = prev.ots + item.inboundQty - item.outboundQty;
+      }
+    });
+    
 
     const due = {
       dueInboundQty: inboundTransaction.due.dueInboundQty,
