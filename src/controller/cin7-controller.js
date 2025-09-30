@@ -66,7 +66,11 @@ const getSOH = async (req, res, next) => {
       ots: openingSOH
     })
     
-    const dueInQty = await purchaseService.getDueInQty(req,sku)
+    const dueIn = await purchaseService.getDueInQty(req,sku)
+    
+    const dueInQty = dueIn.dueQty
+    const dueInProductLines = dueIn.groupedByDate
+    console.log(dueInProductLines)
 
     result.push({
       ref: "DUE",
@@ -74,7 +78,7 @@ const getSOH = async (req, res, next) => {
       in: dueInQty,
       out: 0,
       ots: 0,
-     
+      dueInProductLines: dueInProductLines
     })
 
     let runningOTS = openingSOH
@@ -118,6 +122,7 @@ const getOTS = async (req, res, next) => {
   
     const {sku ='',location ='' } = req.params;
     logger.info("getOTS")
+    console.log("getOTS")
       const [inboundTransaction, outboundTransaction, currentSOH] = await Promise.all([
         purchaseService.getInTransaction(req),
         saleService.getOutTransaction(req, sku),
@@ -126,16 +131,27 @@ const getOTS = async (req, res, next) => {
       const openingSOH = currentSOH?.ProductAvailabilityList?.[0]?.OnHand ?? 0;
       
       const merged = {};
+      const mergedDue = {};
       [...inboundTransaction.resultByMonth, ...outboundTransaction.resultByMonth].forEach(item => {
         if (!item.month) return
         merged[item.month] ??= { month: item.month, inboundQty: 0, outboundQty: 0 };
         merged[item.month].inboundQty += item.inboundQty || 0;
         merged[item.month].outboundQty += item.outboundQty || 0;
       });
+      [...inboundTransaction.dueResultByMonth, ...outboundTransaction.dueResultByMonth].forEach(item => {
+        if (!item.month) return
+        mergedDue[item.month] ??= { month: item.month, inboundQty: 0, outboundQty: 0 };
+        mergedDue[item.month].inboundQty += item.inboundQty || 0;
+        mergedDue[item.month].outboundQty += item.outboundQty || 0;
+      });
 
       const result = Object.keys(merged)
       .sort()
       .map(month => merged[month]);
+      
+      const dueResult = Object.keys(mergedDue)
+      .sort()
+      .map(month => mergedDue[month]);
       
       result.forEach((item, index) => {
       if (index === 0) {
@@ -145,12 +161,11 @@ const getOTS = async (req, res, next) => {
         item.ots = prev.ots + item.inboundQty - item.outboundQty;
       }
     });
+    
 
     const due = {
       dueInboundQty: inboundTransaction.due.dueInboundQty,
       dueOutboundQty: outboundTransaction.due.dueOutboundQty,
-      dueInboundProductLines: inboundTransaction.due.dueInboundProductLines || [],
-      dueOutboundProductLines: outboundTransaction.due.dueOutboundProductLines || [],
       dueOts: (inboundTransaction.due.dueInboundQty || 0) - (outboundTransaction.due.dueOutboundQty || 0),
     };
     
@@ -167,7 +182,13 @@ const getOTS = async (req, res, next) => {
     }
 
     res.status(200).json({
-      data: { result, due, soh, product },
+      data: { result :{
+      soh:result,
+      due:dueResult
+      },
+      due, 
+      soh, 
+      product },
     });
   }
     catch (e) {

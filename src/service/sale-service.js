@@ -15,6 +15,7 @@ const getOutTransaction = async (req,sku) => {
     const groupedByMonth = {};
     let dueOutboundProductLines = [];
     let outboundProductLines = [];
+    let dueGroupedByMonth = {};
     
     const salesOrder= await Promise.all(filteredResult.map(item => getAdvanceSale(item.SaleID)));
     for (let i = 0; i < filteredResult.length; i++) {
@@ -36,9 +37,11 @@ const getOutTransaction = async (req,sku) => {
       if (item.ShipBy && new Date(item.ShipBy) < new Date()) {
       dueOutboundQty += filteredLines.reduce((acc, line) => acc + line.Quantity, 0);
       dueOutboundProductLines = (dueOutboundProductLines || []).concat(productLines);
+      dueGroupedByMonth[monthKey] = {outbound: filteredLines.reduce((acc, line) => acc + line.Quantity, 0)};
       } else {
         groupedByMonth[monthKey].outbound += filteredLines.reduce((acc, line) => acc + line.Quantity, 0);
         groupedByMonth[monthKey].outboundProductLines = productLines;
+        dueGroupedByMonth[monthKey] = {outbound: filteredLines.reduce((acc, line) => acc + line.Quantity, 0)};
       }
     }
     
@@ -48,13 +51,20 @@ const getOutTransaction = async (req,sku) => {
         outboundQty: groupedByMonth[month].outbound,
         outboundProductLines: groupedByMonth[month].outboundProductLines
     }));
+    
+    const sortedDueMonths = Object.keys(dueGroupedByMonth).sort();
+    const dueResultByMonth = sortedDueMonths.map(month => ({
+      month,
+      outboundQty: dueGroupedByMonth[month].outbound,
+    }));
 
     return {
       resultByMonth,
       due: {
         dueOutboundQty,
         dueOutboundProductLines
-      }
+      },
+      dueResultByMonth
     };
   }
   catch (e) {

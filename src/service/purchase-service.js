@@ -51,11 +51,25 @@ const getDueInQty = async (req,sku) => {
       const lines = product.Lines;
     const filteredLines = lines.filter(line => line.SKU === sku);
     productLines = productLines.concat(filteredLines);
-    
+    const groupedByDate = {};
+
+    filteredLines.forEach(line => {
+      const dateKey = line.RequiredBy ? new Date(line.RequiredBy).toISOString().slice(0, 10) : 'unknown';
+
+      if (!groupedByDate[dateKey]) {
+        groupedByDate[dateKey] = [];
+      }
+
+      groupedByDate[dateKey].push(line);
+    });
+
     dueQty += filteredLines.reduce((acc, line) => acc + line.Quantity, 0);
     }
 
-    return dueQty;
+    return {
+      dueQty,
+      groupedByDate
+    };
   }
   catch (e) {
     throw new ResponseError(500,e)
@@ -70,6 +84,7 @@ const getInTransaction = async (req) => {
     let dueInboundQty = 0;
     const groupedByMonth = {};
     let dueInboundProductLines = [];
+    let dueGroupedByMonth = {};
 
     const products = await Promise.all(filteredResult.map(item => getAdvancePurches(item.ID)));
     for (let i = 0; i < filteredResult.length; i++) {
@@ -96,9 +111,15 @@ const getInTransaction = async (req) => {
       const qtySum = filteredLines.reduce((acc, line) => acc + line.Quantity, 0);
 
       if (item.RequiredBy && new Date(item.RequiredBy) < new Date()) {
+      // const dueMonthKey = item.RequiredBy
+      console.log('this is dueMonthKey', monthKey)
+        ? new Date(item.RequiredBy).toISOString().slice(0, 7)
+        : 'unknown';
         // overdue (DUE)
         dueInboundQty += qtySum;
         dueInboundProductLines = dueInboundProductLines.concat(filteredLines);
+        dueGroupedByMonth[monthKey] = {inbound: qtySum};
+        
       } else {
         // future inbound
         groupedByMonth[monthKey].inbound += qtySum;
@@ -113,6 +134,12 @@ const getInTransaction = async (req) => {
       inboundQty: groupedByMonth[month].inbound,
       inboundProductLines: groupedByMonth[month].inboundProductLines,
     }));
+    
+    const sortedDueMonths = Object.keys(dueGroupedByMonth).sort();
+    const dueResultByMonth = sortedDueMonths.map(month => ({
+      month,
+      inboundQty: dueGroupedByMonth[month].inbound,
+    }));
 
     return {
       resultByMonth,
@@ -120,6 +147,8 @@ const getInTransaction = async (req) => {
         dueInboundQty,
         dueInboundProductLines,
       },
+      dueGroupedByMonth,
+      dueResultByMonth,
     };
   }
   catch (e) {
