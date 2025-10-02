@@ -19,6 +19,7 @@ const getOutTransaction = async (req,sku) => {
     const salesOrder= await Promise.all(filteredResult.map(item => getAdvanceSale(item.SaleID)));
     
     for (let i = 0; i < filteredResult.length; i++) {
+      logger.info('this is item sales')
       const item = filteredResult[i];
       const saleOrder = salesOrder[i];
       
@@ -26,11 +27,14 @@ const getOutTransaction = async (req,sku) => {
         logger.info("Order.Location !== location");
         continue;
       }
+      
+      logger.info('this is item.ShipBy', item.ShipBy)
   
       const filteredLines = saleOrder.Lines.filter(line => line.SKU === sku);
       productLines = productLines.concat(filteredLines);
       
-      const monthKey = item.ShipBy ? new Date(item.ShipBy).toISOString().slice(0, 7) : 'unknown';
+      const monthKey = item.ShipBy && new Date(item.ShipBy) >= new Date(new Date().setMonth(new Date().getMonth() + 1))
+        ? new Date(item.ShipBy).toISOString().slice(0, 7) : 'unknown';
       if (!groupedByMonth[monthKey]) {
         groupedByMonth[monthKey] = { dueQty: 0, outbound: 0 };
       }

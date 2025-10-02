@@ -93,14 +93,12 @@ const getInTransaction = async (req) => {
       const Order = product.Order;
 
       if (product.Location !== location) {
-        logger.info("Order.Location !== location");
         continue;
       }
 
       const filteredLines = Order.Lines.filter(line => line.SKU === sku);
       if (filteredLines.length === 0) continue;
-
-      const monthKey = item.RequiredBy
+      const monthKey = item.RequiredBy && new Date(item.RequiredBy) >= new Date(new Date().setMonth(new Date().getMonth() + 1))
         ? new Date(item.RequiredBy).toISOString().slice(0, 7)
         : 'unknown';
 
@@ -111,14 +109,10 @@ const getInTransaction = async (req) => {
       const qtySum = filteredLines.reduce((acc, line) => acc + line.Quantity, 0);
 
       if (item.RequiredBy && new Date(item.RequiredBy) < new Date()) {
-      // const dueMonthKey = item.RequiredBy
-      console.log('this is dueMonthKey', monthKey)
-        ? new Date(item.RequiredBy).toISOString().slice(0, 7)
-        : 'unknown';
+  
         // overdue (DUE)
         dueInboundQty += qtySum;
         dueInboundProductLines = dueInboundProductLines.concat(filteredLines);
-        dueGroupedByMonth[monthKey] = {inbound: qtySum};
         
       } else {
         // future inbound
@@ -135,11 +129,7 @@ const getInTransaction = async (req) => {
       inboundProductLines: groupedByMonth[month].inboundProductLines,
     }));
     
-    const sortedDueMonths = Object.keys(dueGroupedByMonth).sort();
-    const dueResultByMonth = sortedDueMonths.map(month => ({
-      month,
-      inboundQty: dueGroupedByMonth[month].inbound,
-    }));
+
 
     return {
       resultByMonth,
@@ -147,8 +137,6 @@ const getInTransaction = async (req) => {
         dueInboundQty,
         dueInboundProductLines,
       },
-      dueGroupedByMonth,
-      dueResultByMonth,
     };
   }
   catch (e) {
