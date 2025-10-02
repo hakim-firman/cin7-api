@@ -6,7 +6,9 @@ import saleService from "../service/sale-service.js";
 
 const getProductAvailability = async (req, res, next) => {
     try {
-        const result = await cin7Service.getProductAvailability(req)
+        const result = await Promise.all([
+            cin7Service.getProductAvailability(req),
+        ])
         
         res.status(200).json({
             data:result
