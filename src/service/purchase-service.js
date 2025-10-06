@@ -98,7 +98,7 @@ const getInTransaction = async (req) => {
 
       const filteredLines = Order.Lines.filter(line => line.SKU === sku);
       if (filteredLines.length === 0) continue;
-      const monthKey = item.RequiredBy && new Date(item.RequiredBy) >= new Date(new Date().setMonth(new Date().getMonth() + 1))
+      const monthKey = item.RequiredBy && new Date(item.RequiredBy) >= new Date(new Date().setMonth(new Date().getMonth()))
         ? new Date(item.RequiredBy).toISOString().slice(0, 7)
         : 'unknown';
 

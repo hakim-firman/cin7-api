@@ -33,7 +33,7 @@ const getOutTransaction = async (req,sku) => {
       const filteredLines = saleOrder.Lines.filter(line => line.SKU === sku);
       productLines = productLines.concat(filteredLines);
       
-      const monthKey = item.ShipBy && new Date(item.ShipBy) >= new Date(new Date().setMonth(new Date().getMonth() + 1))
+      const monthKey = item.ShipBy && new Date(item.ShipBy) >= new Date(new Date().setMonth(new Date().getMonth()))
         ? new Date(item.ShipBy).toISOString().slice(0, 7) : 'unknown';
       if (!groupedByMonth[monthKey]) {
         groupedByMonth[monthKey] = { dueQty: 0, outbound: 0 };
