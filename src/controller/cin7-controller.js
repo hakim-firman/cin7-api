@@ -128,13 +128,13 @@ const getOTS = async (req, res, next) => {
         saleService.getOutTransaction(req, sku),
         cin7Service.getProductAvailabilityBySKU(sku, location),
       ]);
-      let openingSOH = currentSOH?.ProductAvailabilityList?.[0]?.OnHand ?? 0;
+      let openingSOH = currentSOH?.[0]?.OnHand - outboundTransaction.todayOutboundQty|| 0;
       const merged = {};
       
       const due = {
         dueInboundQty: inboundTransaction.due.dueInboundQty,
         dueOutboundQty: outboundTransaction.due.dueOutboundQty,
-        dueOts: (inboundTransaction.due.dueInboundQty || 0) - (outboundTransaction.due.dueOutboundQty || 0),
+        dueOts: openingSOH + (inboundTransaction.due.dueInboundQty || 0) - (outboundTransaction.due.dueOutboundQty || 0),
       };
       openingSOH += due.dueInboundQty - due.dueOutboundQty;
       [...inboundTransaction.resultByMonth, ...outboundTransaction.resultByMonth].forEach(item => {
@@ -162,8 +162,8 @@ const getOTS = async (req, res, next) => {
     const soh = {
       soh: currentSOH?.[0]?.OnHand || 0,
       in: currentSOH?.[0]?.OnHand || 0,
-      out: currentSOH?.[0]?.Allocated || 0,
-      ots: currentSOH?.[0]?.OnHand - currentSOH?.[0]?.Allocated  || 0,
+      out: outboundTransaction.todayOutboundQty || 0,
+      ots: currentSOH?.[0]?.OnHand - outboundTransaction.todayOutboundQty  || 0,
     }
     
     const product = {

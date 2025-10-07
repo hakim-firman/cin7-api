@@ -13,6 +13,7 @@ const getOutTransaction = async (req,sku) => {
     const groupedByMonth = {};
     let dueOutboundProductLines = [];
     let dueGroupedByMonth = {};
+    let todayOutboundQty = 0;
     
     const filteredResult = result.filter(item => item.Status !== 'VOIDED' && item.CombinedShippingStatus  !== 'SHIPPED');
     const salesOrder= await Promise.all(filteredResult.map(item => getAdvanceSale(item.SaleID)));
@@ -31,16 +32,22 @@ const getOutTransaction = async (req,sku) => {
       const filteredLines = saleOrder?.Lines?.filter(line => line.SKU === sku);
       productLines = productLines.concat(filteredLines);
 
-      const monthKey = item.ShipBy && new Date(item.ShipBy) >= new Date(new Date().setMonth(new Date().getMonth()))
+      const monthKey = item.ShipBy && new Date(item.ShipBy) >= new Date()
         ? new Date(item.ShipBy).toISOString().slice(0, 7) : 'unknown';
       if (!groupedByMonth[monthKey]) {
         groupedByMonth[monthKey] = { dueQty: 0, outbound: 0 };
       }
+      if (item.ShipBy && new Date(item.ShipBy).getUTCMonth() === new Date().getUTCMonth() && new Date(item.ShipBy).getFullYear() === new Date().getFullYear()) {
+        todayOutboundQty += filteredLines.reduce((acc, line) => acc + line.Quantity, 0);
+      }
       if (item.ShipBy && new Date(item.ShipBy) < new Date()) {
+    
       dueOutboundQty += filteredLines.reduce((acc, line) => acc + line.Quantity, 0);
       dueOutboundProductLines = (dueOutboundProductLines || []).concat(productLines);
       dueGroupedByMonth[monthKey] = {outbound: filteredLines.reduce((acc, line) => acc + line.Quantity, 0)};
-      } else {
+      }
+      else {
+
         groupedByMonth[monthKey].outbound += filteredLines.reduce((acc, line) => acc + line.Quantity, 0);
         groupedByMonth[monthKey].outboundProductLines = productLines;
       }
@@ -58,23 +65,20 @@ const getOutTransaction = async (req,sku) => {
       month,
       outboundQty: dueGroupedByMonth[month].outbound,
     }));
-    console.log('resultByMonth', resultByMonth);
+
     return {
       resultByMonth,
       due: {
         dueOutboundQty,
         dueOutboundProductLines
       },
-      dueResultByMonth
+      dueResultByMonth,
+      todayOutboundQty
     };
   }
   catch (e) {
     logger.error("error getOutTransaction:",e)
     throw new ResponseError(500,e)
-    return {
-      error: true,
-      message: e.message || 'An error occurred while processing the transaction.'
-    };
   }
 }
 
