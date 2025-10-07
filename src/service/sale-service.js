@@ -14,25 +14,23 @@ const getOutTransaction = async (req,sku) => {
     let dueOutboundProductLines = [];
     let dueGroupedByMonth = {};
     
-    const filteredResult = result.filter(item => item.Status !== 'VOIDED' && item.CombinedReceivingStatus !== 'SHIPPED');
-    
+    const filteredResult = result.filter(item => item.Status !== 'VOIDED' && item.CombinedShippingStatus  !== 'SHIPPED');
     const salesOrder= await Promise.all(filteredResult.map(item => getAdvanceSale(item.SaleID)));
     
     for (let i = 0; i < filteredResult.length; i++) {
       logger.info('this is item sales')
       const item = filteredResult[i];
-      const saleOrder = salesOrder[i];
-      
-      if (saleOrder.Location !== location) {
+      const saleOrder = salesOrder[i]?.Order;
+      const sale = salesOrder[i];
+
+      if (sale?.Location !== location) {
         logger.info("Order.Location !== location");
         continue;
       }
-      
-      logger.info('this is item.ShipBy', item.ShipBy)
-  
-      const filteredLines = saleOrder.Lines.filter(line => line.SKU === sku);
+
+      const filteredLines = saleOrder?.Lines?.filter(line => line.SKU === sku);
       productLines = productLines.concat(filteredLines);
-      
+
       const monthKey = item.ShipBy && new Date(item.ShipBy) >= new Date(new Date().setMonth(new Date().getMonth()))
         ? new Date(item.ShipBy).toISOString().slice(0, 7) : 'unknown';
       if (!groupedByMonth[monthKey]) {
@@ -45,7 +43,6 @@ const getOutTransaction = async (req,sku) => {
       } else {
         groupedByMonth[monthKey].outbound += filteredLines.reduce((acc, line) => acc + line.Quantity, 0);
         groupedByMonth[monthKey].outboundProductLines = productLines;
-        dueGroupedByMonth[monthKey] = {outbound: filteredLines.reduce((acc, line) => acc + line.Quantity, 0)};
       }
     }
     
@@ -61,7 +58,7 @@ const getOutTransaction = async (req,sku) => {
       month,
       outboundQty: dueGroupedByMonth[month].outbound,
     }));
-
+    console.log('resultByMonth', resultByMonth);
     return {
       resultByMonth,
       due: {
@@ -84,9 +81,10 @@ const getOutTransaction = async (req,sku) => {
 
 const getAdvanceSale = async (id) => {
   try {
-    const response = await apiClient.get(`sale/advance?SaleID=${id}`);
+    const response = await apiClient.get(`sale?ID=${id}`);
     return response.data;
   } catch (err) {
+    logger.error('error getAdvanceSale:', err);
     throw new ResponseError(500,err)
   }
 }
@@ -98,6 +96,7 @@ const getSaleList = async (req,sku) => {
     return result;
   }
   catch (e) {
+    logger.error('error getSaleList:', e);
     throw new ResponseError(500,e)
   }
 }
@@ -109,6 +108,7 @@ const getSaleOrder = async (id) => {
 
     return response.data;
   } catch (err) {
+    logger.error('error getSaleOrder:', err);
     throw new ResponseError(500,err)
   }
 }
