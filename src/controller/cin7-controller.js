@@ -160,10 +160,10 @@ const getOTS = async (req, res, next) => {
   
     
     const soh = {
-      soh: currentSOH?.ProductAvailabilityList?.[0]?.OnHand || 0,
-      in: currentSOH?.ProductAvailabilityList?.[0]?.Available || 0,
-      out: currentSOH?.ProductAvailabilityList?.[0]?.Allocated || 0,
-      ots: currentSOH?.ProductAvailabilityList?.[0]?.Available - currentSOH?.ProductAvailabilityList?.[0]?.Allocated  || 0,
+      soh: currentSOH?.[0]?.OnHand || 0,
+      in: currentSOH?.[0]?.OnHand || 0,
+      out: currentSOH?.[0]?.Allocated || 0,
+      ots: currentSOH?.[0]?.OnHand - currentSOH?.[0]?.Allocated  || 0,
     }
     
     const product = {

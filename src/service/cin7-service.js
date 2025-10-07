@@ -39,12 +39,44 @@ const getProductAvailability = async (req) => {
 
       return Object.values(result);
       
-      return responseAll;
 }
+
 const getProductAvailabilityBySKU = async (sku,location) => {
       
-      const response =  await apiClient.get(`/ref/productavailability?Page=1&Limit=100&SKU=${sku}&Location=${location}`);
-      return response.data;
+      const responseAll =  await fetchAllData(`/ref/productavailability?SKU=${sku}&Location=${location}`,1,100,'ProductAvailabilityList');
+        
+      const result = responseAll.reduce((acc, item) => {
+        if (!acc[`${item.SKU}-${item.Location}`]) {
+          acc[`${item.SKU}-${item.Location}`] = {
+            ID: item.ID,
+            SKU: item.SKU,
+            Name: item.Name,
+            Barcode: item.Barcode,
+            Location: item.Location,
+            Bin: item.Bin,
+            Batch: item.Batch,
+            ExpiryDate: item.ExpiryDate,
+            OnHand: 0,
+            Allocated: 0,
+            Available: 0,
+            OnOrder: 0,
+            StockOnHand: 0,
+            InTransit: 0,
+            NextDeliveryDate: item.NextDeliveryDate
+          };
+        }
+        
+        acc[`${item.SKU}-${item.Location}`].OnHand += item.OnHand;
+        acc[`${item.SKU}-${item.Location}`].Allocated += item.Allocated;
+        acc[`${item.SKU}-${item.Location}`].Available += item.Available;
+        acc[`${item.SKU}-${item.Location}`].OnOrder += item.OnOrder;
+        acc[`${item.SKU}-${item.Location}`].StockOnHand += item.StockOnHand;
+        acc[`${item.SKU}-${item.Location}`].InTransit += item.InTransit;
+        
+        return acc;
+      }, {});
+
+      return Object.values(result);
 }
 
 const getProductBySKU = async (req) => {
